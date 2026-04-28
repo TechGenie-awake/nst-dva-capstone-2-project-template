@@ -37,13 +37,13 @@ If you are working in Google Colab:
 
 | Field | Details |
 |---|---|
-| **Project Title** | _To be filled by team_ |
-| **Sector** | _e.g. Retail, Finance, Healthcare, EdTech_ |
-| **Team ID** | _e.g. DVA-B1-T3_ |
+| **Project Title** | Customer Retention Strategy via RFM Segmentation — Online Retail II |
+| **Sector** | Retail / E-Commerce |
+| **Team ID** | _To be filled by team_ |
 | **Section** | _To be filled by team_ |
 | **Faculty Mentor** | _To be filled by team_ |
 | **Institute** | Newton School of Technology |
-| **Submission Date** | _To be filled by team_ |
+| **Submission Date** | April 28, 2026 |
 
 ### Team Members
 
@@ -61,15 +61,15 @@ If you are working in Google Colab:
 
 ## Business Problem
 
-_Describe the sector context, the decision-maker this project serves, and the core business challenge being addressed. Keep this to 3-5 sentences written in plain language, as if addressing a senior stakeholder._
+A UK-based online gift retailer serves both individual shoppers and wholesale buyers across 30+ countries. Like most mid-sized e-commerce businesses, its marketing and retention spend is currently distributed evenly across the customer base — meaning low-value customers receive the same treatment as the small group driving most of the revenue, while high-value customers slip silently toward churn without targeted intervention. This project segments the active customer base using RFM (Recency, Frequency, Monetary) analysis to identify the segments worth protecting and the segments worth re-engaging, so the retention budget can be reallocated where it returns the most.
 
 **Core Business Question**
 
-> _State the single main question your Tableau dashboard and Python analysis will answer._
+> Which customer segments drive the most revenue, which are at the highest risk of churn, and where should retention spend be reallocated to recover lost value over the next 12 months?
 
 **Decision Supported**
 
-> _What action or decision will this analysis enable the stakeholder to take?_
+> Reallocation of retention and marketing campaign budget across customer segments — including which segments to reward, which to win back, and which to deprioritize — to reduce 12-month customer churn by 10–15% and lift repeat-purchase revenue from the top-quartile segment.
 
 ---
 
@@ -77,21 +77,25 @@ _Describe the sector context, the decision-maker this project serves, and the co
 
 | Attribute | Details |
 |---|---|
-| **Source Name** | _e.g. World Bank, data.gov.in, Kaggle (raw only)_ |
-| **Direct Access Link** | _Paste the direct download or access URL_ |
-| **Row Count** | _Must be greater than 5,000_ |
-| **Column Count** | _Must be greater than 8 meaningful columns_ |
-| **Time Period Covered** | _e.g. Jan 2019 to Dec 2023_ |
-| **Format** | _e.g. CSV, JSON, Excel_ |
+| **Source Name** | UCI Machine Learning Repository (donor: Daqing Chen, Sept 2019); accessed via Kaggle mirror `mashlyn/online-retail-ii-uci` |
+| **Direct Access Link** | https://archive.ics.uci.edu/dataset/502/online+retail+ii |
+| **Row Count** | 1,067,371 |
+| **Column Count** | 8 |
+| **Time Period Covered** | December 1, 2009 – December 9, 2011 |
+| **Format** | CSV (committed as 15 MB compressed ZIP at `data/raw/online_retail_II.zip`) |
 
 **Key Columns Used**
 
 | Column Name | Description | Role in Analysis |
 |---|---|---|
-| _column_1_ | _What it means_ | _Used for KPI / filter / segmentation_ |
-| _column_2_ | _What it means_ | _Used for KPI / filter / segmentation_ |
-| _column_3_ | _What it means_ | _Used for KPI / filter / segmentation_ |
-| _column_4_ | _What it means_ | _Used for KPI / filter / segmentation_ |
+| InvoiceNo | Six-digit transaction ID; `C` prefix = cancellation | Returns/cancellation analysis, transaction-level KPIs |
+| InvoiceDate | Transaction timestamp | RFM Recency, time-series trends, dashboard filter |
+| Quantity | Units purchased per transaction | Revenue computation, returns flagging |
+| UnitPrice | Price per unit (GBP) | Revenue computation, RFM Monetary |
+| CustomerID | Five-digit customer ID (~25% missing) | RFM segmentation, churn analysis (excluded if null) |
+| Country | Customer's country of residence | Geographic dashboard filter, regional KPIs |
+| StockCode | Five-digit product ID | Product-level analysis (excluded for non-product codes) |
+| Description | Product name (free text) | Tableau filter, product-level reporting |
 
 For full column definitions, see [`docs/data_dictionary.md`](docs/data_dictionary.md).
 
@@ -101,9 +105,13 @@ For full column definitions, see [`docs/data_dictionary.md`](docs/data_dictionar
 
 | KPI | Definition | Formula / Computation |
 |---|---|---|
-| _e.g. Monthly Revenue Growth %_ | _What business outcome this tracks_ | _Show the exact formula or notebook reference_ |
-| _e.g. Customer Churn Rate_ | _What business outcome this tracks_ | _Show the exact formula or notebook reference_ |
-| _e.g. Repeat Purchase Rate_ | _What business outcome this tracks_ | _Show the exact formula or notebook reference_ |
+| Active Customer Count | Customers with ≥1 purchase in trailing 12 months | `nunique(CustomerID where InvoiceDate >= max_date - 365 days)` |
+| Average Order Value (AOV) | Average revenue per invoice | `sum(Quantity * UnitPrice) / nunique(InvoiceNo)` |
+| Customer Lifetime Value (CLV) | Total spend per customer over the dataset period | `sum(Quantity * UnitPrice) group by CustomerID` |
+| 90-Day Churn Rate | Share of customers with no purchase in last 90 days | `count(CustomerID where recency_days > 90) / count(CustomerID)` |
+| Revenue Concentration (Top 20%) | Revenue share of the top quintile of customers | `sum(revenue of top 20% of CustomerIDs by CLV) / sum(total revenue)` |
+| Repeat Purchase Rate | Share of customers with ≥2 distinct invoices | `count(CustomerID with frequency >= 2) / count(CustomerID)` |
+| Country Revenue Mix | Revenue share per country | `sum(revenue) group by Country / sum(total revenue)` |
 
 Document KPI logic clearly in `notebooks/04_statistical_analysis.ipynb` and `notebooks/05_final_load_prep.ipynb`.
 
